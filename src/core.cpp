@@ -5,8 +5,11 @@ Core::Core() {
     Memory memory(mem_size);
     ptrMemory = &memory;
 
+    // Load program into memory
+    ptrMemory->load_program();
+
     // Set the PC & Registers to initially zero
-    // PC = memory.get_PC_start();
+    PC = ptrMemory->get_start();
 
     // Initial registers
     for (int i = 0; i < num_regs; i++) {
@@ -18,3 +21,16 @@ Core::Core() {
 }
 
 Core::~Core() {}
+
+void Core::tick() {
+    // If run flag is set
+    if (run == true) {
+        // Process instruction
+        process_instruction();
+    }
+
+    // Increment intruction count
+    instr_count++;
+}
+
+void Core::process_instruction() {}

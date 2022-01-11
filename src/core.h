@@ -3,6 +3,9 @@
 
 class Core {
 private:
+    // Instruction count
+    int instr_count = 0;
+
     // Size of the memory
     static const int mem_size = 0x00100000;
     // Number of registers
@@ -12,10 +15,10 @@ private:
     bool run = false;
 
     // Program Counter
-    uint32_t PC = 0;
+    unsigned int PC = 0;
 
     // Registers
-    uint32_t RF[num_regs] = {0};
+    unsigned int RF[num_regs] = {0};
 
     // Memory interface
     Memory *ptrMemory;
