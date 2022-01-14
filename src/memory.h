@@ -9,7 +9,7 @@ private:
     static const int address_start = 0x00400000;
 
     // Pointer to the allocated memory
-    char *memory = nullptr;
+    unsigned char *memory = nullptr;
 
     // Size of the allocated memory
     int mem_size = 0;
@@ -26,7 +26,7 @@ public:
     void write(unsigned int address, unsigned int data);
 
     // Load the program
-    void load_program();
+    void load_hex();
 
     // Get the address for the PC
     unsigned int get_start();

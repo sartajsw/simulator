@@ -22,6 +22,31 @@ private:
 
     // Memory interface
     Memory *ptrMemory;
+
+    // Instruction types
+    bool is_r_instr = false; 
+    bool is_i_instr = false; 
+    bool is_s_instr = false; 
+    bool is_b_instr = false; 
+    bool is_u_instr = false; 
+    bool is_j_instr = false;
+
+    // Fields
+    unsigned int funct7; 
+    unsigned int rs2;
+    unsigned int rs1;
+    unsigned int funct3;
+    unsigned int rd;
+    unsigned int opcode;
+    unsigned int immidiate;
+
+    bool funct7_valid;
+    bool rs2_valid;
+    bool rs1_valid;
+    bool funct3_valid;
+    bool rd_valid;
+    bool imm_valid;
+
 public:
     // Constructor
     Core();
@@ -34,4 +59,10 @@ public:
     // Process the next instruction 
     // Perform all the steps of the processor in a non-pipelined fashion.
     void process_instruction();
+
+    // Get status of run flag
+    bool get_run();
+
+    // Increment PC
+    void increment_PC(unsigned int offset);
 };
