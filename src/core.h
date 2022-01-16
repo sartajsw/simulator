@@ -1,5 +1,6 @@
 #include <iostream>
 #include "memory.h"
+#include "instructions.h"
 
 class Core {
 private:
@@ -23,13 +24,10 @@ private:
     // Memory interface
     Memory *ptrMemory;
 
-    // Instruction types
-    bool is_r_instr = false; 
-    bool is_i_instr = false; 
-    bool is_s_instr = false; 
-    bool is_b_instr = false; 
-    bool is_u_instr = false; 
-    bool is_j_instr = false;
+    // Instructions
+    Instruction instr_type;
+    unsigned int instruction;
+    InstructionFormat instr_format;
 
     // Fields
     unsigned int funct7; 
