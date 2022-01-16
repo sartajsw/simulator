@@ -357,8 +357,21 @@ void Core::process_instruction() {
             exit(0);
     }
 
+    // Read from register file
+    if (this->rs1_valid ==  true) {
+        this->src1_value = this->RF[this->rs1];
+    }
+    if (this->rs2_valid ==  true) {
+        this->src2_value = this->RF[this->rs2];
+    }
+
     /* Execute */
 
+    this->sltu_rslt = this->src1_value < this->src2_value;
+    this->sltiu_rslt = this->src1_value < this->immidiate;
+    this->sext_src1 =  (int) this->src1_value;
+    this->sra_result = this->sext_src1 >> (this->src2_value & 0x1F);
+    this->srai_result = this->sext_src1 >> (this->immidiate & 0x1F);
 
     /* Memory */
 

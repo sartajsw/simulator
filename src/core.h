@@ -46,6 +46,9 @@ private:
     bool rd_valid;
     bool imm_valid;
 
+    unsigned int src1_value;
+    unsigned int src2_value;
+
     // ALU
     unsigned int sltu_rslt;
     unsigned int sltiu_rslt;
