@@ -37,6 +37,7 @@ private:
     unsigned int rd;
     unsigned int opcode;
     unsigned int immidiate;
+    unsigned int decode_bits;
 
     bool funct7_valid;
     bool rs2_valid;
@@ -44,6 +45,15 @@ private:
     bool funct3_valid;
     bool rd_valid;
     bool imm_valid;
+
+    // ALU
+    unsigned int sltu_rslt;
+    unsigned int sltiu_rslt;
+    unsigned long sext_src1;
+    unsigned long sra_result;
+    unsigned long srai_result;
+
+    unsigned int result;
 
 public:
     // Constructor

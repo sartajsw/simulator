@@ -63,6 +63,7 @@ void Memory::load_hex() {
     while (std::getline(file, line)) {
         // Convert the string hex value
         word = std::stol(line, nullptr, 16);
+        std::cout << std::hex << word << "\n";
         // Write into memory
         this->write(i + this->address_start, word);
         // Increment address

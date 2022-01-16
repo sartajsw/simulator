@@ -7,3 +7,37 @@ enum class InstructionFormat {
     J,
     Invalid
 };
+
+enum class Instruction {
+    BEQ,
+    BNE,
+    BLT,
+    BGE,
+    BLTU,
+    BGEU,
+    ADDI,
+    ADD,
+    LUI,
+    AUIPC,
+    JAL,
+    JALR,
+    SLTI,
+    SLTIU,
+    XORI,
+    ORI,
+    ANDI,
+    SLLI,
+    SRLI,
+    SRAI,
+    SUB,
+    SLL,
+    SLT,
+    SLTU,
+    XOR,
+    SRL,
+    SRA,
+    OR,
+    AND,
+    LOAD,
+    Invalid
+};

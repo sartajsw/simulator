@@ -32,7 +32,7 @@ void Core::tick() {
     }
 
     // Increment intruction count
-    instr_count++;
+    this->instr_count++;
 }
 
 void Core::process_instruction() {
@@ -45,13 +45,13 @@ void Core::process_instruction() {
     unsigned int masked_instr = (this->instruction & (0x1F << 2)) >> 2;
     
     std::cout << "Instruction Format: ";
-    InstructionFormat instr_format = InstructionFormat::Invalid;
+    this->instr_format = InstructionFormat::Invalid;
     switch (masked_instr) {
         case 0b01011:
         case 0b10100:
         case 0b01100:
         case 0b01110:
-            instr_format = InstructionFormat::R;
+            this->instr_format = InstructionFormat::R;
             std::cout << "R\n";
             break;
         case 0b00000:
@@ -59,25 +59,25 @@ void Core::process_instruction() {
         case 0b00100:
         case 0b00110:
         case 0b11001:
-            instr_format = InstructionFormat::I;
+            this->instr_format = InstructionFormat::I;
             std::cout << "I\n";
             break;
         case 0b01000:
         case 0b01001:
-            instr_format = InstructionFormat::S;
+            this->instr_format = InstructionFormat::S;
             std::cout << "S\n";
             break;
         case 0b11000:
-            instr_format = InstructionFormat::B;
+            this->instr_format = InstructionFormat::B;
             std::cout << "B\n";
             break;
         case 0b00101:
         case 0b01101:
-            instr_format = InstructionFormat::U;
+            this->instr_format = InstructionFormat::U;
             std::cout << "U\n";
             break;
         case 0b11011:
-            instr_format = InstructionFormat::J;
+            this->instr_format = InstructionFormat::J;
             std::cout << "J\n";
             break;
         default:
@@ -86,15 +86,15 @@ void Core::process_instruction() {
     }
 
     // Extract fields
-    this->funct7  = (this->instruction & 0b1111111) << 25;
-    this->rs2 = (this->instruction & 0b11111) << 20;
-    this->rs1 = (this->instruction & 0b11111) << 15;
-    this->funct3 = (this->instruction & 0b111) << 12;
-    this->rd = (this->instruction & 0b11111) << 7;
-    this->opcode = (this->instruction & 0b1111111) << 0;
+    this->funct7  = (this->instruction >> 25) & 0x7F;
+    this->rs2 = (this->instruction >> 20) & 0x1F;
+    this->rs1 = (this->instruction >> 15) & 0x1F;
+    this->funct3 = (this->instruction >> 12) & 0x7;
+    this->rd = (this->instruction >> 7) & 0x1F;
+    this->opcode = this->instruction & 0x7F;
 
     // Extract immidiate value
-    switch (instr_format) {
+    switch (this->instr_format) {
         case InstructionFormat::I:
             this->immidiate = ((0x1FFFFF && (this->instruction & (0x8 << 28))) << 11) | 
                               ((this->instruction >> 20) & 0x7FF);
@@ -123,24 +123,24 @@ void Core::process_instruction() {
     }
 
     // Check field validity
-    this->funct7_valid = (instr_format == InstructionFormat::R);
-    this->rs2_valid = (instr_format == InstructionFormat::R) || 
-                      (instr_format == InstructionFormat::S) || 
-                      (instr_format == InstructionFormat::B);
-    this->rs1_valid = (instr_format == InstructionFormat::R) || 
-                      (instr_format == InstructionFormat::S) || 
-                      (instr_format == InstructionFormat::I) || 
-                      (instr_format == InstructionFormat::B);
-    this->funct3_valid = (instr_format == InstructionFormat::R) || 
-                         (instr_format == InstructionFormat::S) || 
-                         (instr_format == InstructionFormat::I) || 
-                         (instr_format == InstructionFormat::B);
-    this->rd_valid = ((instr_format == InstructionFormat::R) || 
-                      (instr_format == InstructionFormat::I) || 
-                      (instr_format == InstructionFormat::U) || 
-                      (instr_format == InstructionFormat::J)) && 
+    this->funct7_valid = (this->instr_format == InstructionFormat::R);
+    this->rs2_valid = (this->instr_format == InstructionFormat::R) || 
+                      (this->instr_format == InstructionFormat::S) || 
+                      (this->instr_format == InstructionFormat::B);
+    this->rs1_valid = (this->instr_format == InstructionFormat::R) || 
+                      (this->instr_format == InstructionFormat::S) || 
+                      (this->instr_format == InstructionFormat::I) || 
+                      (this->instr_format == InstructionFormat::B);
+    this->funct3_valid = (this->instr_format == InstructionFormat::R) || 
+                         (this->instr_format == InstructionFormat::S) || 
+                         (this->instr_format == InstructionFormat::I) || 
+                         (this->instr_format == InstructionFormat::B);
+    this->rd_valid = ((this->instr_format == InstructionFormat::R) || 
+                      (this->instr_format == InstructionFormat::I) || 
+                      (this->instr_format == InstructionFormat::U) || 
+                      (this->instr_format == InstructionFormat::J)) && 
                      (this->rd != 0);
-    this->imm_valid = !(instr_format == InstructionFormat::R);
+    this->imm_valid = !(this->instr_format == InstructionFormat::R);
 
     std::cout << "Extracted fields:\n";
     std::cout << "Funct7 - " << this->funct7 << "\n"; 
@@ -152,9 +152,210 @@ void Core::process_instruction() {
     std::cout << "Immidiate - " << this->immidiate << "\n";
 
     // Extract the decode bits needed
-    unsigned int decode_bits = (((this->instruction & (0x4 << 28)) << 10) | 
-                               (this->funct3 << 7) | 
-                               (this->opcode)) & 0x7FF;
+    this->decode_bits = ((this->instruction >> 0x14) & 0x400) |
+                               ((this->funct3 << 0x7) & 0x380) |
+                               (this->opcode & 0x7F);
+
+    std::cout << "Intruction Type: ";
+    this->instr_type = Instruction::Invalid;
+    switch(this->decode_bits) {
+        case 0b0'000'1100011:
+        case 0b1'000'1100011:
+            this->instr_type = Instruction::BEQ;
+            std::cout << "BEQ\n";
+            break;
+        case 0b0'001'1100011:
+        case 0b1'001'1100011:
+            this->instr_type = Instruction::BNE;
+            std::cout << "BNE\n";
+            break;
+        case 0b0'100'1100011:
+        case 0b1'100'1100011:
+            this->instr_type = Instruction::BLT;
+            std::cout << "BLT\n";
+            break;
+        case 0b0'101'1100011:
+        case 0b1'101'1100011:
+            this->instr_type = Instruction::BGE;
+            std::cout << "BGE\n";
+            break;
+        case 0b0'110'1100011:
+        case 0b1'110'1100011:
+            this->instr_type = Instruction::BLTU;
+            std::cout << "BLTU\n";
+            break;
+        case 0b0'111'1100011:
+        case 0b1'111'1100011:
+            this->instr_type = Instruction::BGEU;
+            std::cout << "BGEU\n";
+            break;
+        case 0b0'000'0010011:
+        case 0b1'000'0010011:
+            this->instr_type = Instruction::ADDI;
+            std::cout << "ADDI\n";
+            break;
+        case 0b0'000'0110011:
+            this->instr_type = Instruction::ADD;
+            std::cout << "ADD\n";
+            break;
+        case 0b0'000'0110111:
+        case 0b0'001'0110111:
+        case 0b0'010'0110111:
+        case 0b0'011'0110111:
+        case 0b0'100'0110111:
+        case 0b0'101'0110111:
+        case 0b0'110'0110111:
+        case 0b0'111'0110111:
+        case 0b1'000'0110111:
+        case 0b1'001'0110111:
+        case 0b1'010'0110111:
+        case 0b1'011'0110111:
+        case 0b1'100'0110111:
+        case 0b1'101'0110111:
+        case 0b1'110'0110111:
+        case 0b1'111'0110111:
+            this->instr_type = Instruction::LUI;
+            std::cout << "LUI\n";
+            break;
+        case 0b0'000'0010111:
+        case 0b0'001'0010111:
+        case 0b0'010'0010111:
+        case 0b0'011'0010111:
+        case 0b0'100'0010111:
+        case 0b0'101'0010111:
+        case 0b0'110'0010111:
+        case 0b0'111'0010111:
+        case 0b1'000'0010111:
+        case 0b1'001'0010111:
+        case 0b1'010'0010111:
+        case 0b1'011'0010111:
+        case 0b1'100'0010111:
+        case 0b1'101'0010111:
+        case 0b1'110'0010111:
+        case 0b1'111'0010111:
+            this->instr_type = Instruction::AUIPC;
+            std::cout << "AUIPC\n";
+            break;
+        case 0b0'000'1101111:
+        case 0b0'001'1101111:
+        case 0b0'010'1101111:
+        case 0b0'011'1101111:
+        case 0b0'100'1101111:
+        case 0b0'101'1101111:
+        case 0b0'110'1101111:
+        case 0b0'111'1101111:
+        case 0b1'000'1101111:
+        case 0b1'001'1101111:
+        case 0b1'010'1101111:
+        case 0b1'011'1101111:
+        case 0b1'100'1101111:
+        case 0b1'101'1101111:
+        case 0b1'110'1101111:
+        case 0b1'111'1101111:
+            this->instr_type = Instruction::JAL;
+            std::cout << "JAL\n";
+            break;
+        case 0b0'000'1100111:
+        case 0b1'000'1100111:
+            this->instr_type = Instruction::JALR;
+            std::cout << "JALR\n";
+            break;
+        case 0b0'010'0010011:
+        case 0b1'010'0010011:
+            this->instr_type = Instruction::SLTI;
+            std::cout << "SLTI\n";
+            break;
+        case 0b0'011'0010011:
+        case 0b1'011'0010011:
+            this->instr_type = Instruction::SLTIU;
+            std::cout << "SLTIU\n";
+            break;
+        case 0b0'100'0010011:
+        case 0b1'100'0010011:
+            this->instr_type = Instruction::XORI;
+            std::cout << "XORI\n";
+            break;
+        case 0b0'110'0010011:
+        case 0b1'110'0010011:
+            this->instr_type = Instruction::ORI;
+            std::cout << "ORI\n";
+            break;
+        case 0b0'111'0010011:
+        case 0b1'111'0010011:
+            this->instr_type = Instruction::ANDI;
+            std::cout << "ADDI\n";
+            break;
+        case 0b0'001'0010011:
+            this->instr_type = Instruction::SLLI;
+            std::cout << "SLLI\n";
+            break;
+        case 0b0'101'0010011:
+            this->instr_type = Instruction::SRLI;
+            std::cout << "SRLI\n";
+            break;
+        case 0b1'101'0010011:
+            this->instr_type = Instruction::SRAI;
+            std::cout << "SRAI\n";
+            break;
+        case 0b1'000'0110011:
+            this->instr_type = Instruction::SUB;
+            std::cout << "SUB\n";
+            break;
+        case 0b0'001'0110011:
+            this->instr_type = Instruction::SLL;
+            std::cout << "SLL\n";
+            break;
+        case 0b0'010'0110011:
+            this->instr_type = Instruction::SLT;
+            std::cout << "SLT\n";
+            break;
+        case 0b0'011'0110011:
+            this->instr_type = Instruction::SLTU;
+            std::cout << "SLTU\n";
+            break;
+        case 0b0'100'0110011:
+            this->instr_type = Instruction::XOR;
+            std::cout << "XOR\n";
+            break;
+        case 0b0'101'0110011:
+            this->instr_type = Instruction::SRL;
+            std::cout << "SRL\n";
+            break;
+        case 0b1'101'0110011:
+            this->instr_type = Instruction::SRA;
+            std::cout << "SRA\n";
+            break;
+        case 0b0'110'0110011:
+            this->instr_type = Instruction::OR;
+            std::cout << "OR\n";
+            break;
+        case 0b0'111'0110011:
+            this->instr_type = Instruction::AND;
+            std::cout << "AND\n";
+            break;
+        case 0b0'000'0000011:
+        case 0b0'001'0000011:
+        case 0b0'010'0000011:
+        case 0b0'011'0000011:
+        case 0b0'100'0000011:
+        case 0b0'101'0000011:
+        case 0b0'110'0000011:
+        case 0b0'111'0000011:
+        case 0b1'000'0000011:
+        case 0b1'001'0000011:
+        case 0b1'010'0000011:
+        case 0b1'011'0000011:
+        case 0b1'100'0000011:
+        case 0b1'101'0000011:
+        case 0b1'110'0000011:
+        case 0b1'111'0000011:
+            this->instr_type = Instruction::LOAD;
+            std::cout << "LOAD\n";
+            break;
+        default:
+            std::cerr << "Instruction not supported!\n";
+            exit(0);
+    }
 
     /* Execute */
 
