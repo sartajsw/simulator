@@ -38,7 +38,7 @@ void Core::tick() {
 void Core::process_instruction() {
     /* Fetch */
     this->instruction = this->ptrMemory->read(this->PC);
-    std::cout << "Instruction: " << this->instruction << std::endl;
+    std::cout << std::hex << "Instruction: " << this->instruction << std::endl;
 
     /* Decode */
     // Get instruction format
@@ -96,27 +96,28 @@ void Core::process_instruction() {
     // Extract immidiate value
     switch (this->instr_format) {
         case InstructionFormat::I:
-            this->immidiate = ((0x1FFFFF && (this->instruction & (0x8 << 28))) << 11) | 
+            this->immidiate = ((~((this->instruction >> 31) & 0x1) + 1) & 0xFFFFF800) | 
                               ((this->instruction >> 20) & 0x7FF);
             break;
         case InstructionFormat::S:
-            this->immidiate = ((0x1FFFFF && (this->instruction & (0x8 << 28))) << 11) | 
-                              (((this->instruction >> 25) & 0x3F) << 5) | ((this->instruction >> 7) & 0x1F); 
+            this->immidiate = ((~((this->instruction >> 31) & 0x1) + 1) & 0xFFFFF800) | 
+                              (((this->instruction >> 25) & 0x3F) << 5) | 
+                              ((this->instruction >> 7) & 0x1F); 
             break;
         case InstructionFormat::B:
-            this->immidiate = ((0xFFFFF && (this->instruction & (0x8 << 28))) << 12) | 
+            this->immidiate = ((~((this->instruction >> 31) & 0x1) + 1) & 0xFFFFF000) | 
                               (((this->instruction >> 7) & 0x1) << 11) | 
                               (((this->instruction >> 25) & 0x3F) << 5) | 
-                              (((this->instruction >> 7) & 0xF) << 1) | 0;
+                              (((this->instruction >> 8) & 0xF) << 1);
             break;
         case InstructionFormat::U:
-            this->immidiate = (((this->instruction >> 20) && 0xFFFFF) << 12) | 0;
+            this->immidiate = (((this->instruction >> 12) && 0xFFFFF) << 12);
             break;
         case InstructionFormat::J:
-            this->immidiate = (0xFFF && (this->instruction & (0x8 << 28))) | 
+            this->immidiate = ((~((this->instruction >> 31) & 0x1) + 1) & 0xFFF00000) | 
                               (((this->instruction >> 12) & 0xFF) << 12) | 
                               (((this->instruction >> 20) & 0x1) << 11) | 
-                              (((this->instruction >> 21) & 0x3FF) << 1) | 0;
+                              (((this->instruction >> 21) & 0x3FF) << 1);
             break;
         default:
             this->immidiate = 0;
@@ -142,13 +143,13 @@ void Core::process_instruction() {
                      (this->rd != 0);
     this->imm_valid = !(this->instr_format == InstructionFormat::R);
 
-    std::cout << "Extracted fields:\n";
-    std::cout << "Funct7 - " << this->funct7 << "\n"; 
-    std::cout << "Rs2 - " << this->rs2 << "\n";
-    std::cout << "Rs1 - " << this->rs1 << "\n";
-    std::cout << "Funct3 - " << this->funct3 << "\n";
-    std::cout << "Rd - " << this->rd << "\n";
-    std::cout << "Opcode - " << this->opcode << "\n";
+    std::cout << "Extracted fields: ";
+    std::cout << "Funct7 - " << this->funct7 << " "; 
+    std::cout << "Rs2 - " << this->rs2 << " ";
+    std::cout << "Rs1 - " << this->rs1 << " ";
+    std::cout << "Funct3 - " << this->funct3 << " ";
+    std::cout << "Rd - " << this->rd << " ";
+    std::cout << "Opcode - " << this->opcode << " ";
     std::cout << "Immidiate - " << this->immidiate << "\n";
 
     // Extract the decode bits needed
@@ -367,18 +368,141 @@ void Core::process_instruction() {
 
     /* Execute */
 
+    // Calculate sub-expressions
     this->sltu_rslt = this->src1_value < this->src2_value;
     this->sltiu_rslt = this->src1_value < this->immidiate;
     this->sext_src1 =  (int) this->src1_value;
     this->sra_result = this->sext_src1 >> (this->src2_value & 0x1F);
     this->srai_result = this->sext_src1 >> (this->immidiate & 0x1F);
 
+    // Reset the variables
+    this->result = 0;
+    this->taken_branch = false;
+
+    // Calculate the result
+    switch(this->instr_type) {
+        // ALU Instructions
+        case Instruction::ANDI:
+            this->result = this->src1_value & this->immidiate;
+            break;
+        case Instruction::ORI:
+            this->result = this->src1_value | this->immidiate;
+            break;
+        case Instruction::XORI:
+            this->result = this->src1_value ^ this->immidiate;
+            break;
+        case Instruction::ADDI:
+            this->result = this->src1_value + this->immidiate;
+            break;
+        case Instruction::SLLI:
+            this->result = this->src1_value << (this->immidiate & 0x3F);
+            break;
+        case Instruction::SRLI:
+            this->result = this->src1_value >> (this->immidiate & 0x3F);
+            break;
+        case Instruction::AND:
+            this->result = this->src1_value & this->src2_value;
+            break;
+        case Instruction::OR:
+            this->result = this->src1_value | this->src2_value;
+            break;
+        case Instruction::XOR:
+            this->result = this->src1_value ^ this->src2_value;
+            break;
+        case Instruction::ADD:
+            this->result = this->src1_value + this->src2_value;
+            break;
+        case Instruction::SUB:
+            this->result = this->src1_value - this->src2_value;
+            break;
+        case Instruction::SLL:
+            this->result = this->src1_value << (this->src2_value & 0x1F);
+            break;
+        case Instruction::SRL:
+            this->result = this->src1_value >> (this->src2_value & 0x1F);
+            break;
+        case Instruction::SLTU:
+            this->result = this->sltu_rslt;
+            break;
+        case Instruction::SLTIU:
+            this->result = this->sltiu_rslt;
+            break;
+        case Instruction::LUI:
+            this->result = this->immidiate & 0xFFFFF000;
+            break;
+        case Instruction::AUIPC:
+            this ->result = this->PC + this->immidiate;
+            break;
+        case Instruction::JAL:
+            this->result = this->PC + 4;
+            break;
+        case Instruction::JALR:
+            this->result = this->PC + 4;
+            break;
+        case Instruction::SLT:
+            this->result = ((this->src1_value & (0x1 << 31)) == (this->src2_value & (0x1 << 31))) ? this->sltu_rslt : ((this->src1_value >> 31) & 0x1);
+            break;
+        case Instruction::SLTI:
+            this->result = ((this->src1_value & (0x1 << 31)) == (this->immidiate & (0x1 << 31))) ? this->sltu_rslt : ((this->src1_value >> 31) & 0x1);
+            break;
+        case Instruction::SRA:
+            this->result = this->sra_result & 0xFFFFFFFF;
+            break;
+        case Instruction::SRAI:
+            this->result = this->srai_result & 0xFFFFFFFF;
+            break;
+        case Instruction::LOAD:
+            this->result = this->src1_value + this->immidiate;
+            break;
+        // Branch Prediction
+        case Instruction::BEQ:
+            this->taken_branch = (this->src1_value == this->src2_value);
+            break;
+        case Instruction::BNE:
+            this->taken_branch = (this->src1_value != this->src2_value);
+            break;
+        case Instruction::BLT:
+            this->taken_branch = (this->src1_value < this->src2_value) ^ ((this->src1_value & (0x1 << 31)) != (this->src2_value & (0x1 << 31)));
+            break;
+        case Instruction::BGE:
+            this->taken_branch = (this->src1_value >= this->src2_value) ^ ((this->src1_value & (0x1 << 31)) != (this->src2_value & (0x1 << 31)));
+            break;
+        case Instruction::BLTU:
+            this->taken_branch = (this->src1_value < this->src2_value);
+            break;
+        case Instruction::BGEU:
+            this->taken_branch = (this->src1_value >= this->src2_value);
+            break;
+        default:
+            this->result = 0;
+            this->taken_branch = false;
+    }
+
+    if (this->instr_format == InstructionFormat::S) {
+        this->result = this->src1_value + this->immidiate;
+    }
+
     /* Memory */
+    // Address has been calculated and stored in result reg
+    
+    // Store
+    if (this->instr_format == InstructionFormat::S) {
+        this->ptrMemory->write(this->result, this->src2_value);
+    }
 
+    // Loads - write the destination register with the value read from the specific memory address
+    if (this->instr_type == Instruction::LOAD) {
+        this->result = this->ptrMemory->read(this->result);
+    }
+    
     /* Writeback */
+    if (this->rd_valid) {
+        this->RF[this->rd] = this->result;
+    }
 
+    this->print_RF();
 
-    // Increment PC
+    // PC & Branch Logic
     this->increment_PC(4);
 
     std::cout << std::endl;
@@ -388,6 +512,21 @@ bool Core::get_run() {
     return this->run;
 }
 
-void Core::increment_PC(unsigned int offset = 4) {
-    this->PC += offset;
+void Core::increment_PC(unsigned int offset) {
+    if (this->taken_branch == true) {
+        this->PC = this->PC + this->immidiate;
+    } else if (this->instr_type == Instruction::JAL) {
+        this->PC = this->PC + this->immidiate;
+    } else if (this->instr_type == Instruction::JALR) {
+        this->PC = this->src1_value + this->immidiate;
+    } else {
+        this->PC += offset;
+    }
+}
+
+void Core::print_RF() {
+    std::cout << std::dec << "RF: ";
+    for(int i = 0; i < this->num_regs; i++)
+        std::cout << i << ":" << this->RF[i] << " ";
+    std::cout << std::hex << std::endl;
 }

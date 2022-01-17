@@ -57,6 +57,9 @@ private:
     unsigned long srai_result;
 
     unsigned int result;
+    
+    // PC / Branch Logic
+    bool taken_branch;
 
 public:
     // Constructor
@@ -75,5 +78,8 @@ public:
     bool get_run();
 
     // Increment PC
-    void increment_PC(unsigned int offset);
+    void increment_PC(unsigned int offset = 4);
+
+    // Print the Register File
+    void print_RF();
 };
