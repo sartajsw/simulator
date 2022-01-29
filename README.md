@@ -8,7 +8,7 @@ The main goals of this projects is to:
 
 ## Steps:
 
-- [ ] Build a intruction level simulator
+- [x] Build a intruction level simulator
 - [ ] Update it to be a more complex pipelined design
 - [ ] Add branch prediction
 - [ ] Add caches
