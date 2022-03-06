@@ -1,5 +1,6 @@
 #include <iostream>
 #include "instructions.h"
+#include "core.h"
 
 class PipelineStage {
 public:
@@ -33,6 +34,9 @@ public:
 
     // Write to latch
     void write();
+
+    // Flush the stage
+    void reset();
 };
 
 class DecodeStage: public PipelineStage {
@@ -87,6 +91,12 @@ public:
 
     // Write to latch
     void write();
+
+    // Flush the stage
+    void reset();
+
+    // Check valid
+    bool check_valid();
 };
 
 class ExecuteStage: public PipelineStage {
@@ -125,6 +135,12 @@ public:
 
     // Write to latch
     void write();
+
+    // Flush the stage
+    void reset();
+
+    // Check valid
+    bool check_valid();
 };
 
 class MemoryAccessStage: public PipelineStage {
@@ -154,6 +170,12 @@ public:
 
     // Write to latch
     void write();
+
+    // Flush the stage
+    void reset();
+
+    // Check valid
+    bool check_valid();
 };
 
 class WritebackStage: public PipelineStage {
@@ -175,4 +197,7 @@ public:
 
     // Read from prev stage
     void read();
+
+    // Check valid
+    bool check_valid();
 };
